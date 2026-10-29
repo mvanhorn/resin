@@ -74,6 +74,8 @@ pub(crate) struct ChatRequest {
     #[serde(default)]
     stream_options: StreamOptions,
     n: Option<u32>,
+    #[serde(default)]
+    priority: i32,
     #[serde(flatten)]
     extra: BTreeMap<String, Value>,
 }
@@ -103,6 +105,8 @@ pub(crate) struct ResponsesRequest {
     reasoning: Option<Value>,
     #[serde(default)]
     stream: bool,
+    #[serde(default)]
+    priority: i32,
     #[serde(flatten)]
     extra: BTreeMap<String, Value>,
 }
@@ -207,6 +211,7 @@ fn chat_request(state: &AppState, body: ChatRequest) -> RequestResult<Conversati
             .map(|rank| rank as usize),
         stop: body.stop.map_or_else(Vec::new, OneOrManyStrings::into_vec),
         reasoning_effort: body.reasoning_effort,
+        priority: body.priority,
         extra: body.extra,
     })
 }
@@ -435,6 +440,7 @@ fn responses_request(
             .map(|rank| rank as usize),
         stop: body.stop.map_or_else(Vec::new, OneOrManyStrings::into_vec),
         reasoning_effort,
+        priority: body.priority,
         extra: body.extra,
     })
 }

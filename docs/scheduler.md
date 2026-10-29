@@ -70,6 +70,11 @@ rows of different priorities. It never mixes keys or phases. `batch_key=None`
 is a real cohort and differs from zero. Priorities are signed 32-bit integers;
 larger values are admitted first within the preferred phase.
 
+HTTP serving forwards the same value. Chat Completions, Responses, and
+Messages accept `priority` (default `0`) and pass it to `Engine.submit`.
+Omitted or explicit zero are equivalent; negative values remain valid. The
+field is a scheduler control, not a recipe extra.
+
 The ready queue stays in age order. Taking a batch merges selected indices with
 one queue traversal; returning survivors sorts only those survivors and merges
 them into the queue. Neither operation repeatedly scans or sorts all waiting

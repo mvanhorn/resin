@@ -39,6 +39,8 @@ pub(crate) struct MessagesRequest {
     thinking: Option<Value>,
     #[serde(default)]
     stream: bool,
+    #[serde(default)]
+    priority: i32,
     #[serde(flatten)]
     extra: BTreeMap<String, Value>,
 }
@@ -150,6 +152,7 @@ fn conversation_request(
             .map(|rank| rank as usize),
         stop: body.stop_sequences,
         reasoning_effort: None,
+        priority: body.priority,
         extra: body.extra,
     })
 }

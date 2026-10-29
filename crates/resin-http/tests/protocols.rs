@@ -454,6 +454,86 @@ async fn output_token_limits_preserve_omission_and_explicit_values() {
 }
 
 #[tokio::test]
+async fn request_priority_defaults_to_zero_and_is_forwarded() {
+    for (path, input) in [
+        (
+            "/v1/chat/completions",
+            json!({"messages": [{"role": "user", "content": "hi"}]}),
+        ),
+        ("/v1/responses", json!({"input": "hi"})),
+        (
+            "/v1/messages",
+            json!({"messages": [{"role": "user", "content": "hi"}], "max_tokens": 8}),
+        ),
+    ] {
+        for (priority, expected) in [
+            (Value::Null, json!(0)),
+            (json!(5), json!(5)),
+            (json!(-2), json!(-2)),
+        ] {
+            let mut body = input.clone();
+            body["model"] = json!("test-model");
+            if !priority.is_null() {
+                body["priority"] = priority;
+            }
+            let (status, response) = json_response(
+                recording_router(1),
+                Request::post(path)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .body(Body::from(body.to_string()))
+                    .unwrap(),
+            )
+            .await;
+            assert_eq!(status, StatusCode::OK, "{path}: {body}");
+            let content = match path {
+                "/v1/chat/completions" => &response["choices"][0]["message"]["content"],
+                "/v1/responses" => &response["output"][0]["content"][0]["text"],
+                _ => &response["content"][0]["text"],
+            };
+            let normalized: Value = serde_json::from_str(content.as_str().unwrap()).unwrap();
+            assert_eq!(normalized["priority"], expected, "{path}: {body}");
+            assert!(
+                normalized["extra"].get("priority").is_none(),
+                "priority must not be treated as a recipe extra: {path}: {body}"
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn invalid_request_priority_is_rejected() {
+    for (path, input) in [
+        (
+            "/v1/chat/completions",
+            json!({"messages": [{"role": "user", "content": "hi"}]}),
+        ),
+        ("/v1/responses", json!({"input": "hi"})),
+        (
+            "/v1/messages",
+            json!({"messages": [{"role": "user", "content": "hi"}], "max_tokens": 8}),
+        ),
+    ] {
+        for priority in [json!(2147483648_u64), json!(1.5), json!("high")] {
+            let mut body = input.clone();
+            body["model"] = json!("test-model");
+            body["priority"] = priority;
+            let response = recording_router(1)
+                .oneshot(
+                    Request::post(path)
+                        .header(header::CONTENT_TYPE, "application/json")
+                        .body(Body::from(body.to_string()))
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            let status = response.status();
+            assert_ne!(status, StatusCode::OK, "{path}: {body}");
+            assert!(status.is_client_error(), "{path}: {body} returned {status}");
+        }
+    }
+}
+
+#[tokio::test]
 async fn explicit_zero_output_limit_requires_prompt_logprobs() {
     for (path, input, limits) in [
         (

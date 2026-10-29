@@ -22,6 +22,9 @@ pub struct ConversationRequest {
     pub routed_dp_rank: Option<usize>,
     pub stop: Vec<String>,
     pub reasoning_effort: Option<String>,
+    /// Signed Engine scheduler priority. Larger values are admitted first.
+    #[serde(default)]
+    pub priority: i32,
     pub extra: BTreeMap<String, Value>,
 }
 

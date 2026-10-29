@@ -215,7 +215,9 @@ uv run python scripts/lfm2_serve.py
 Then open <http://127.0.0.1:8000>. The page reports prompt and generated token
 counts, elapsed generation time, and output tokens per second. The same process
 serves `/v1/chat/completions`, `/v1/responses`, `/v1/messages`, and `/v1/models`.
-Both examples explicitly use the CPU Torch runner.
+Both examples explicitly use the CPU Torch runner. Generation requests accept
+`priority`, a signed 32-bit Engine scheduler weight (default `0`; larger values
+run first). See [scheduling](docs/scheduler.md).
 
 ## Modal HTTP endpoints
 
